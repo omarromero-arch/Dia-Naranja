@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>25N - Corresponsabilidad en Acción - UTIG</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #0d0614;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .firefly {
+    position: fixed;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #ffb366;
+    box-shadow: 0 0 8px 2px rgba(255, 130, 20, 0.85);
+    pointer-events: none;
+    opacity: .75;
+    z-index: 1;
+  }
+
+  .firefly.morada {
+    background: #d8b4fe;
+    box-shadow: 0 0 8px 2px rgba(168, 85, 247, 0.75);
+  }
+
+  .burbuja {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 2;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 245, 230, 0.55), rgba(255, 145, 35, 0.18) 55%, rgba(255, 123, 0, 0.42));
+    border: 1px solid rgba(255, 185, 110, 0.65);
+    box-shadow: inset 0 0 8px rgba(255, 175, 85, 0.35), 0 0 10px rgba(255, 130, 20, 0.25);
+    will-change: transform, opacity;
+  }
+
+  .burbuja.morada {
+    background: radial-gradient(circle at 30% 30%, rgba(250, 240, 255, 0.55), rgba(168, 85, 247, 0.18) 55%, rgba(147, 51, 234, 0.42));
+    border: 1px solid rgba(216, 180, 254, 0.65);
+    box-shadow: inset 0 0 8px rgba(216, 180, 254, 0.35), 0 0 10px rgba(168, 85, 247, 0.25);
+  }
+
+  .burbuja-pop {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 2;
+    border: 2px solid rgba(255, 185, 110, 0.9);
+    animation: popRing 0.42s ease-out forwards;
+  }
+
+  .burbuja-pop.morada {
+    border-color: rgba(216, 180, 254, 0.9);
+  }
+
+  @keyframes popRing {
+    0% { transform: scale(0.75); opacity: 0.95; }
+    100% { transform: scale(1.9); opacity: 0; }
+  }
+
+  .nombres {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  .nombre {
+    position: absolute;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 15px 8px 9px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: clamp(13px, 1.4vw, 18px);
+    white-space: nowrap;
+    backdrop-filter: blur(4px);
+    transition: box-shadow 0.3s ease;
+    pointer-events: auto;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+  }
+
+  .nombre:hover {
+    filter: brightness(1.15);
+  }
+
+  .nombre.arrastrando {
+    cursor: grabbing;
+    z-index: 10;
+    filter: brightness(1.25);
+    box-shadow: 0 0 24px rgba(255, 145, 35, 0.75);
+  }
+
+  .nombre .icono-deber {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  /* Variantes de color inspiradas en la lista de deberes */
+  .deber-morado {
+    background: rgba(65, 29, 98, 0.72);
+    border: 1px solid rgba(155, 102, 214, 0.65);
+    color: #f3e8ff;
+    text-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+    box-shadow: 0 0 14px rgba(126, 58, 242, 0.28);
+  }
+  .deber-morado .icono-deber {
+    background: #7e3af2;
+    box-shadow: 0 0 8px rgba(126, 58, 242, 0.8);
+  }
+
+  .deber-naranja {
+    background: rgba(74, 34, 14, 0.72);
+    border: 1px solid rgba(255, 159, 28, 0.65);
+    color: #fff3e0;
+    text-shadow: 0 0 8px rgba(255, 140, 0, 0.65);
+    box-shadow: 0 0 14px rgba(255, 140, 0, 0.25);
+  }
+  .deber-naranja .icono-deber {
+    background: #f59e0b;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.85);
+  }
+
+  .deber-lila {
+    background: rgba(82, 46, 115, 0.72);
+    border: 1px solid rgba(192, 132, 252, 0.65);
+    color: #faf5ff;
+    text-shadow: 0 0 8px rgba(192, 132, 252, 0.6);
+    box-shadow: 0 0 14px rgba(168, 85, 247, 0.25);
+  }
+  .deber-lila .icono-deber {
+    background: #9f67e0;
+    box-shadow: 0 0 8px rgba(159, 103, 224, 0.8);
+  }
+
+  .deber-naranja-vibrante {
+    background: rgba(80, 30, 12, 0.74);
+    border: 1px solid rgba(255, 123, 0, 0.7);
+    color: #ffedd5;
+    text-shadow: 0 0 8px rgba(255, 115, 0, 0.7);
+    box-shadow: 0 0 14px rgba(249, 115, 22, 0.3);
+  }
+  .deber-naranja-vibrante .icono-deber {
+    background: #f97316;
+    box-shadow: 0 0 8px rgba(249, 115, 22, 0.85);
+  }
+
+  .deber-morado-oscuro {
+    background: rgba(46, 16, 74, 0.78);
+    border: 1px solid rgba(139, 92, 246, 0.6);
+    color: #ede9fe;
+    text-shadow: 0 0 8px rgba(124, 58, 237, 0.65);
+    box-shadow: 0 0 14px rgba(91, 33, 182, 0.35);
+  }
+  .deber-morado-oscuro .icono-deber {
+    background: #5b21b6;
+    box-shadow: 0 0 8px rgba(91, 33, 182, 0.9);
+  }
+
+  .mensaje {
+    position: fixed;
+    left: 50%;
+    bottom: 5vh;
+    transform: translateX(-50%);
+    width: min(92%, 880px);
+    text-align: center;
+    color: #fff3e6;
+    opacity: 0;
+    transition: opacity 2s ease, transform 2s ease;
+    text-shadow:
+      0 0 10px rgba(255, 123, 0, 0.85),
+      0 0 24px rgba(138, 43, 226, 0.65);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  .mensaje.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-6px);
+  }
+
+  .etiqueta-25n {
+    display: inline-block;
+    padding: 4px 14px;
+    margin-bottom: 8px;
+    border-radius: 999px;
+    background: rgba(91, 33, 145, 0.65);
+    border: 1px solid rgba(255, 145, 35, 0.6);
+    color: #ffb366;
+    font-size: clamp(12px, 1.4vw, 15px);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .titulo {
+    font-size: clamp(24px, 4.4vw, 52px);
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    color: #ffffff;
+  }
+
+  .titulo span {
+    color: #ff9429;
+    text-shadow: 0 0 14px rgba(255, 132, 0, 0.9);
+  }
+
+  .subtitulo {
+    font-size: clamp(17px, 2.5vw, 28px);
+    font-weight: 600;
+    color: #e6ccff;
+  }
+
+  .dedicatoria {
+    margin-top: 10px;
+    font-size: clamp(13px, 1.5vw, 18px);
+    line-height: 1.45;
+    color: #ffe8d1;
+    opacity: .94;
+  }
+
+  .reiniciar {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    border: 1px solid rgba(255, 145, 35, 0.55);
+    background: rgba(45, 18, 68, 0.72);
+    color: #ffb870;
+    padding: 9px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    opacity: .75;
+    z-index: 5;
+    font-weight: 600;
+  }
+
+  .reiniciar:hover {
+    opacity: 1;
+    background: rgba(74, 29, 110, 0.9);
+  }
+</style>
+</head>
+<body>
+
+<canvas id="lazo25n"></canvas>
+
+<div class="nombres" id="nombres"></div>
+
+<div class="mensaje" id="mensaje">
+  <div class="etiqueta-25n">25N · 16 Días de Activismo</div>
+  <div class="titulo">Corresponsabilidad <span>en Acción</span>🎗️</div>
+  <div class="subtitulo">Tareas compartidas, familias más fuertes 💜🧡</div>
+  <div class="dedicatoria">
+    ¡Hoy nos toca a todos! Juntas y juntos hacemos la diferencia,<br>
+    365 días para una vida libre de violencia ✨
+  </div>
+</div>
+
+<button class="reiniciar" id="reiniciar">↻ Ver de nuevo</button>
+
+<script>
+const canvas = document.getElementById("lazo25n");
+const ctx = canvas.getContext("2d");
+const mensaje = document.getElementById("mensaje");
+const reiniciar = document.getElementById("reiniciar");
+
+let W, H, cx, cy, S;
+let animationStart = 0;
+let finished = false;
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + "px";
+  canvas.style.height = H + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  cx = W / 2;
+  cy = H * 0.40;
+  S = Math.min(W, H) * 0.34;
+}
+
+// Dibuja un arco progresivo en el canvas
+function drawPartialArc(x, y, radius, startAngle, endAngle, progress, anticlockwise = false) {
+  if (progress <= 0) return;
+  const totalAngle = endAngle - startAngle;
+  const currentEnd = startAngle + totalAngle * progress;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, startAngle, currentEnd, anticlockwise);
+  ctx.stroke();
+}
+
+// Dibuja una línea recta progresiva
+function drawPartialLine(x1, y1, x2, y2, progress) {
+  if (progress <= 0) return;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x1 + (x2 - x1) * progress, y1 + (y2 - y1) * progress);
+  ctx.stroke();
+}
+
+// Emblema izquierdo: CNDH México (sol radiante, laureles, mano y tipografía) dibujándose por trazos
+function drawCNDHLogo(progress, boost = 0) {
+  if (progress <= 0) return;
+  const isMobile = W < 768;
+  const scale = isMobile ? Math.min(W * 0.00115, 0.55) : Math.min(W * 0.00082, 0.95);
+  const lx = isMobile ? W * 0.24 : Math.max(150, cx - S * 1.45);
+  const ly = isMobile ? H * 0.13 : cy - S * 0.05;
+
+  ctx.save();
+  ctx.translate(lx, ly);
+  ctx.scale(scale, scale);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  // Aura luminosa del emblema CNDH que se intensifica al interactuar
+  const auraAlpha = (0.14 + boost * 0.34) * progress;
+  const aura = ctx.createRadialGradient(10, 0, 10, 10, 0, 195 + boost * 35);
+  aura.addColorStop(0, `rgba(255, 155, 50, ${auraAlpha})`);
+  aura.addColorStop(0.5, `rgba(168, 85, 247, ${auraAlpha * 0.75})`);
+  aura.addColorStop(1, "rgba(13, 6, 20, 0)");
+  ctx.fillStyle = aura;
+  ctx.beginPath();
+  ctx.arc(10, 0, 195 + boost * 35, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (boost > 0.01) {
+    ctx.shadowColor = "rgba(255, 175, 75, 0.95)";
+    ctx.shadowBlur = 12 + boost * 24;
+  }
+
+  const iconX = -85;
+  const iconY = 5;
+
+  // 1. Sol radiante superior (20 rayos dibujándose)
+  const sunP = Math.min(1, progress * 2.2);
+  if (sunP > 0) {
+    const rays = 20;
+    for (let i = 0; i < rays; i++) {
+      const ang = (i / rays) * Math.PI * 2;
+      const rIn = 11;
+      const rOut = (i % 2 === 0 ? 34 : 27) * sunP;
+      ctx.strokeStyle = i % 2 === 0 ? "rgba(255, 165, 60, 0.9)" : "rgba(216, 180, 254, 0.85)";
+      ctx.lineWidth = 1.6;
+      drawPartialLine(
+        iconX + Math.cos(ang) * rIn,
+        iconY - 62 + Math.sin(ang) * rIn,
+        iconX + Math.cos(ang) * rOut,
+        iconY - 62 + Math.sin(ang) * rOut,
+        sunP
+      );
+    }
+    ctx.strokeStyle = "rgba(255, 190, 110, 0.95)";
+    ctx.lineWidth = 2;
+    drawPartialArc(iconX, iconY - 62, 8, 0, Math.PI * 2, sunP);
+  }
+
+  // 2. Guirnaldas de laurel izquierda y derecha (múltiples hebras/hojas progresivas)
+  const laurelP = Math.max(0, Math.min(1, (progress - 0.12) * 1.45));
+  if (laurelP > 0) {
+    for (let s = -1; s <= 1; s++) {
+      ctx.strokeStyle = s === 0 ? "rgba(216, 180, 254, 0.95)" : "rgba(255, 155, 50, 0.55)";
+      ctx.lineWidth = s === 0 ? 2 : 1.1;
+      // Rama izquierda
+      drawPartialArc(iconX + 4 + s * 2, iconY + 2, 58, Math.PI * 0.53, Math.PI * 1.32, laurelP);
+      // Rama derecha
+      drawPartialArc(iconX - 4 - s * 2, iconY + 2, 58, Math.PI * 0.47, -Math.PI * 0.32, laurelP, true);
+    }
+
+    // Hojas estilizadas a lo largo de ambas ramas
+    const leaves = 11;
+    for (let i = 0; i < leaves; i++) {
+      const leafThreshold = i / leaves;
+      if (laurelP > leafThreshold) {
+        const lp = Math.min(1, (laurelP - leafThreshold) * 5);
+        const t = i / (leaves - 1);
+        const aL = Math.PI * (0.56 + t * 0.72);
+        const bxL = iconX + 4 + Math.cos(aL) * 58;
+        const byL = iconY + 2 + Math.sin(aL) * 58;
+
+        ctx.strokeStyle = i % 2 === 0 ? "rgba(233, 213, 255, 0.9)" : "rgba(255, 175, 85, 0.85)";
+        ctx.lineWidth = 1.5;
+        drawPartialLine(bxL, byL, bxL + Math.cos(aL - 0.55) * 13 * lp, byL + Math.sin(aL - 0.55) * 13 * lp, 1);
+        drawPartialLine(bxL, byL, bxL + Math.cos(aL + 0.55) * 11 * lp, byL + Math.sin(aL + 0.55) * 11 * lp, 1);
+
+        const aR = Math.PI * (0.44 - t * 0.72);
+        const bxR = iconX - 4 + Math.cos(aR) * 58;
+        const byR = iconY + 2 + Math.sin(aR) * 58;
+        drawPartialLine(bxR, byR, bxR + Math.cos(aR + 0.55) * 13 * lp, byR + Math.sin(aR + 0.55) * 13 * lp, 1);
+        drawPartialLine(bxR, byR, bxR + Math.cos(aR - 0.55) * 11 * lp, byR + Math.sin(aR - 0.55) * 11 * lp, 1);
+      }
+    }
+  }
+
+  // 3. Mano abierta al centro (contorno dibujándose con hebras)
+  const handP = Math.max(0, Math.min(1, (progress - 0.25) * 1.5));
+  if (handP > 0) {
+    const handPts = [
+      { x: iconX - 10, y: iconY + 46 },
+      { x: iconX - 12, y: iconY + 20 },
+      { x: iconX - 24, y: iconY + 6 },
+      { x: iconX - 20, y: iconY - 3 },
+      { x: iconX - 11, y: iconY + 7 },
+      { x: iconX - 11, y: iconY - 22 },
+      { x: iconX - 5, y: iconY - 22 },
+      { x: iconX - 4, y: iconY - 3 },
+      { x: iconX + 2, y: iconY - 28 },
+      { x: iconX + 8, y: iconY - 27 },
+      { x: iconX + 6, y: iconY - 3 },
+      { x: iconX + 13, y: iconY - 23 },
+      { x: iconX + 18, y: iconY - 21 },
+      { x: iconX + 14, y: iconY + 2 },
+      { x: iconX + 22, y: iconY - 12 },
+      { x: iconX + 26, y: iconY - 9 },
+      { x: iconX + 17, y: iconY + 18 },
+      { x: iconX + 11, y: iconY + 46 }
+    ];
+
+    const totalSegs = handPts.length - 1;
+    const drawSegs = totalSegs * handP;
+    ctx.strokeStyle = "rgba(255, 225, 190, 0.95)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(handPts[0].x, handPts[0].y);
+    for (let i = 0; i < totalSegs; i++) {
+      if (i + 1 <= drawSegs) {
+        ctx.lineTo(handPts[i + 1].x, handPts[i + 1].y);
+      } else if (i < drawSegs) {
+        const frac = drawSegs - i;
+        ctx.lineTo(
+          handPts[i].x + (handPts[i + 1].x - handPts[i].x) * frac,
+          handPts[i].y + (handPts[i + 1].y - handPts[i].y) * frac
+        );
+      }
+    }
+    ctx.stroke();
+  }
+
+  // 4. Texto institucional "CNDH / MÉXICO / Defendemos al Pueblo" apareciendo con brillo
+  const textP = Math.max(0, Math.min(1, (progress - 0.45) / 0.55));
+  if (textP > 0) {
+    ctx.globalAlpha = textP;
+    ctx.textAlign = "left";
+
+    // "CNDH" con efecto trazo luminoso + relleno suave
+    ctx.font = "900 48px 'Segoe UI', Arial, sans-serif";
+    ctx.strokeStyle = "rgba(255, 148, 41, 0.95)";
+    ctx.lineWidth = 1.6;
+    ctx.strokeText("CNDH", -5, -8);
+    ctx.fillStyle = "rgba(243, 232, 255, 0.92)";
+    ctx.fillText("CNDH", -5, -8);
+
+    // "M É X I C O"
+    ctx.font = "700 17px 'Segoe UI', Arial, sans-serif";
+    ctx.fillStyle = "#ffb870";
+    ctx.fillText("M   É   X   I   C   O", -3, 16);
+
+    // Línea divisoria
+    ctx.strokeStyle = "rgba(216, 180, 254, 0.85)";
+    ctx.lineWidth = 2;
+    drawPartialLine(-4, 26, 142, 26, textP);
+
+    // "Defendemos al Pueblo"
+    ctx.font = "italic 700 16px Georgia, serif";
+    ctx.fillStyle = "#e9d5ff";
+    ctx.fillText("Defendemos al Pueblo", -4, 46);
+  }
+
+  ctx.restore();
+}
+
+// Emblema derecho: Unidad Técnica para la Igualdad de Género (aros entrelazados + "=" + texto)
+function drawUTIGLogo(progress, boost = 0) {
+  if (progress <= 0) return;
+  const isMobile = W < 768;
+  const scale = isMobile ? Math.min(W * 0.00115, 0.55) : Math.min(W * 0.00082, 0.95);
+  const rx = isMobile ? W * 0.74 : Math.min(W - 165, cx + S * 1.45);
+  const ry = isMobile ? H * 0.13 : cy - S * 0.05;
+
+  ctx.save();
+  ctx.translate(rx, ry);
+  ctx.scale(scale, scale);
+  ctx.lineCap = "round";
+
+  // Aura luminosa del emblema UTIG que se intensifica con la interacción
+  const auraAlpha = (0.14 + boost * 0.34) * progress;
+  const aura = ctx.createRadialGradient(20, 0, 10, 20, 0, 195 + boost * 35);
+  aura.addColorStop(0, `rgba(255, 155, 50, ${auraAlpha})`);
+  aura.addColorStop(0.5, `rgba(168, 85, 247, ${auraAlpha * 0.75})`);
+  aura.addColorStop(1, "rgba(13, 6, 20, 0)");
+  ctx.fillStyle = aura;
+  ctx.beginPath();
+  ctx.arc(20, 0, 195 + boost * 35, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (boost > 0.01) {
+    ctx.shadowColor = "rgba(216, 180, 254, 0.95)";
+    ctx.shadowBlur = 12 + boost * 24;
+  }
+
+  const ringCx = -78;
+  const ringCy = 2;
+
+  // 1. Dos aros entrelazados formados por múltiples hebras concéntricas (como el listón)
+  const ringP = Math.min(1, progress * 1.35);
+  if (ringP > 0) {
+    const strands = 9;
+    for (let j = 0; j < strands; j++) {
+      const norm = (j / (strands - 1)) - 0.5;
+      const rOffset = norm * 14;
+      const isEdge = Math.abs(norm) > 0.36;
+
+      ctx.strokeStyle = isEdge
+        ? "rgba(255, 185, 95, 0.95)"
+        : "rgba(216, 180, 254, 0.85)";
+      ctx.lineWidth = isEdge ? 1.8 : 1.3;
+
+      // Aro izquierdo
+      drawPartialArc(ringCx - 16, ringCy, 36 + rOffset, -Math.PI * 0.75, Math.PI * 1.25, ringP);
+      // Aro derecho
+      drawPartialArc(ringCx + 16, ringCy, 36 + rOffset, Math.PI * 0.25, Math.PI * 2.25, ringP);
+    }
+  }
+
+  // 2. Signo "=" central en tonos naranja luminoso
+  const eqP = Math.max(0, Math.min(1, (progress - 0.28) * 1.8));
+  if (eqP > 0) {
+    ctx.strokeStyle = "rgba(255, 155, 45, 0.95)";
+    ctx.lineWidth = 7;
+    drawPartialLine(ringCx - 20, ringCy - 9, ringCx + 20, ringCy - 9, eqP);
+    drawPartialLine(ringCx - 20, ringCy + 9, ringCx + 20, ringCy + 9, eqP);
+  }
+
+  // 3. Línea vertical difuminada divisoria
+  const divP = Math.max(0, Math.min(1, (progress - 0.35) * 1.6));
+  if (divP > 0) {
+    const gradDiv = ctx.createLinearGradient(0, -48, 0, 52);
+    gradDiv.addColorStop(0, "rgba(216, 180, 254, 0)");
+    gradDiv.addColorStop(0.5, "rgba(216, 180, 254, 0.85)");
+    gradDiv.addColorStop(1, "rgba(216, 180, 254, 0)");
+    ctx.strokeStyle = gradDiv;
+    ctx.lineWidth = 2;
+    drawPartialLine(-14, -48, -14, 52, divP);
+  }
+
+  // 4. Tipografía "UNIDAD TÉCNICA PARA LA / Igualdad / de Género"
+  const textP = Math.max(0, Math.min(1, (progress - 0.45) / 0.55));
+  if (textP > 0) {
+    ctx.globalAlpha = textP;
+    ctx.textAlign = "left";
+
+    ctx.font = "600 12px 'Segoe UI', Arial, sans-serif";
+    ctx.fillStyle = "#e9d5ff";
+    ctx.fillText("UNIDAD TÉCNICA PARA LA", -2, -26);
+
+    ctx.font = "900 32px 'Segoe UI', Arial, sans-serif";
+    ctx.strokeStyle = "rgba(255, 148, 41, 0.9)";
+    ctx.lineWidth = 1.2;
+    ctx.strokeText("Igualdad", -2, 6);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("Igualdad", -2, 6);
+
+    ctx.strokeText("de Género", -2, 38);
+    ctx.fillStyle = "#ffd8b0";
+    ctx.fillText("de Género", -2, 38);
+  }
+
+  ctx.restore();
+}
+
+function ease(t) {
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
+
+// Evalúa un punto en una curva Bézier cúbica
+function cubicPoint(p0, p1, p2, p3, t) {
+  const u = 1 - t;
+  const tt = t * t;
+  const uu = u * u;
+  const uuu = uu * u;
+  const ttt = tt * t;
+
+  return {
+    x: uuu * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + ttt * p3.x,
+    y: uuu * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + ttt * p3.y
+  };
+}
+
+// Dibuja un segmento progresivo de una Bézier cúbica
+function drawPartialBezier(p0, p1, p2, p3, progress) {
+  if (progress <= 0) return;
+  const steps = Math.max(12, Math.floor(80 * progress));
+  ctx.beginPath();
+  ctx.moveTo(p0.x, p0.y);
+  for (let i = 1; i <= steps; i++) {
+    const t = (i / steps) * progress;
+    const pt = cubicPoint(p0, p1, p2, p3, t);
+    ctx.lineTo(pt.x, pt.y);
+  }
+  ctx.stroke();
+}
+
+// Dibuja el moño/listón naranja con efecto de múltiples hebras dibujándose y aura luminosa
+function drawOrangeRibbon(progress, boost = 0) {
+  if (progress <= 0) return;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.lineCap = "round";
+
+  // Halo de luz cálida alrededor del listón naranja
+  const haloRadius = S * (1.05 + boost * 0.25);
+  const halo = ctx.createRadialGradient(0, 0, S * 0.08, 0, 0, haloRadius);
+  halo.addColorStop(0, `rgba(255, 165, 55, ${(0.24 + boost * 0.32) * progress})`);
+  halo.addColorStop(0.45, `rgba(255, 115, 15, ${(0.12 + boost * 0.2) * progress})`);
+  halo.addColorStop(1, "rgba(255, 115, 15, 0)");
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(0, 0, haloRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.shadowColor = `rgba(255, 155, 45, ${0.55 + boost * 0.45})`;
+  ctx.shadowBlur = 10 + boost * 22;
+
+  const strands = 16;
+
+  for (let j = 0; j < strands; j++) {
+    const norm = (j / (strands - 1)) - 0.5;
+    const offset = norm * (S * 0.19);
+    const strandProgress = Math.min(1, Math.max(0, progress * 1.15 - Math.abs(norm) * 0.22));
+    if (strandProgress <= 0) continue;
+
+    const isEdge = Math.abs(norm) > 0.38;
+    ctx.strokeStyle = isEdge
+      ? "rgba(255, 190, 95, 0.95)"
+      : `rgba(255, ${Math.round(115 + (0.5 - Math.abs(norm)) * 55)}, 15, 0.85)`;
+    ctx.lineWidth = isEdge ? 2.1 : 1.5;
+
+    // Tramo 1: Pata inferior derecha sube hacia el bucle superior
+    const p0 = { x: S * 0.46 + offset * 0.85, y: S * 0.72 - offset * 0.25 };
+    const p1 = { x: S * 0.16 + offset * 0.65, y: S * 0.24 };
+    const p2 = { x: -S * 0.44 - offset * 0.95, y: -S * 0.22 };
+    const p3 = { x: 0, y: -S * 0.66 - offset * 0.75 };
+
+    // Tramo 2: Desde la cima del bucle baja cruzando hacia la pata inferior izquierda
+    const q0 = p3;
+    const q1 = { x: S * 0.44 + offset * 0.95, y: -S * 0.22 };
+    const q2 = { x: -S * 0.16 - offset * 0.65, y: S * 0.24 };
+    const q3 = { x: -S * 0.46 - offset * 0.85, y: S * 0.72 + offset * 0.25 };
+
+    const pFirst = Math.min(1, strandProgress * 2);
+    const pSecond = Math.max(0, (strandProgress - 0.45) / 0.55);
+
+    drawPartialBezier(p0, p1, p2, p3, pFirst);
+    drawPartialBezier(q0, q1, q2, q3, pSecond);
+  }
+
+  // Sombra sutil en el cruce central para dar profundidad de listón doblado
+  if (progress > 0.55) {
+    const foldAlpha = Math.min(0.45, (progress - 0.55) * 1.1);
+    const grad = ctx.createRadialGradient(0, S * 0.06, 2, 0, S * 0.06, S * 0.22);
+    grad.addColorStop(0, `rgba(40, 12, 60, ${foldAlpha})`);
+    grad.addColorStop(1, "rgba(40, 12, 60, 0)");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, S * 0.06, S * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function glow(ribbonBoost = 0) {
+  const g1 = ctx.createRadialGradient(cx, cy, 0, cx, cy, S * (1.65 + ribbonBoost * 0.25));
+  g1.addColorStop(0, `rgba(255, 135, 25, ${0.20 + ribbonBoost * 0.18})`);
+  g1.addColorStop(0.45, `rgba(130, 50, 200, ${0.09 + ribbonBoost * 0.08})`);
+  g1.addColorStop(1, "rgba(13, 6, 20, 0)");
+
+  ctx.fillStyle = g1;
+  ctx.fillRect(0, 0, W, H);
+}
+
+// Estado suave de brillo reactivo para el listón y los emblemas
+const glowLevels = { ribbon: 0, cndh: 0, utig: 0 };
+
+function computeProximityEnergy(targetX, targetY, radius) {
+  let energy = 0;
+
+  // 1. Cercanía del cursor o dedo (más intenso al arrastrar)
+  if (pointer.active) {
+    const dPtr = Math.hypot(pointer.x - targetX, pointer.y - targetY);
+    if (dPtr < radius) {
+      const factor = 1 - dPtr / radius;
+      energy = Math.max(energy, factor * (draggedObj ? 1.0 : 0.75));
+    }
+  }
+
+  // 2. Cercanía o cruce de los deberes flotantes
+  for (let i = 0; i < objetos.length; i++) {
+    const o = objetos[i];
+    const r = o.el.getBoundingClientRect();
+    const ox = o.x + r.width / 2;
+    const oy = o.y + r.height / 2;
+    const dObj = Math.hypot(ox - targetX, oy - targetY);
+    if (dObj < radius * 1.15) {
+      const factor = 1 - dObj / (radius * 1.15);
+      const speedBonus = o.dragging ? 0.35 : Math.min(0.25, Math.hypot(o.vx, o.vy) * 0.04);
+      energy = Math.max(energy, Math.min(1, factor * 0.85 + speedBonus));
+    }
+  }
+
+  return energy;
+}
+
+function animate(time) {
+  if (!animationStart) animationStart = time;
+  const elapsed = time - animationStart;
+
+  // Calcula la intensidad de brillo reactivo para cada elemento
+  const isMobile = W < 768;
+  const cndhX = isMobile ? W * 0.24 : Math.max(150, cx - S * 1.45);
+  const cndhY = isMobile ? H * 0.13 : cy - S * 0.05;
+  const utigX = isMobile ? W * 0.74 : Math.min(W - 165, cx + S * 1.45);
+  const utigY = isMobile ? H * 0.13 : cy - S * 0.05;
+
+  const targetRibbon = computeProximityEnergy(cx, cy, S * 1.1);
+  const targetCndh = computeProximityEnergy(cndhX, cndhY, Math.max(135, S * 0.85));
+  const targetUtig = computeProximityEnergy(utigX, utigY, Math.max(135, S * 0.85));
+
+  // Transición suave (encendido rápido y desvanecimiento gradual)
+  glowLevels.ribbon += (targetRibbon - glowLevels.ribbon) * 0.12;
+  glowLevels.cndh += (targetCndh - glowLevels.cndh) * 0.12;
+  glowLevels.utig += (targetUtig - glowLevels.utig) * 0.12;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = "#0d0614";
+  ctx.fillRect(0, 0, W, H);
+  glow(glowLevels.ribbon);
+
+  // Dibujo progresivo del listón naranja (3.2 segundos)
+  const ribbonProgress = ease(Math.max(0, Math.min(1, elapsed / 3200)));
+  drawOrangeRibbon(ribbonProgress, glowLevels.ribbon);
+
+  // Dibujo progresivo sincronizado de los emblemas CNDH y UTIG a los costados
+  const logosProgress = ease(Math.max(0, Math.min(1, (elapsed - 250) / 3100)));
+  drawCNDHLogo(logosProgress, glowLevels.cndh);
+  drawUTIGLogo(logosProgress, glowLevels.utig);
+
+  if (elapsed > 3300 && !finished) {
+    finished = true;
+    mensaje.classList.add("visible");
+  }
+
+  requestAnimationFrame(animate);
+}
+
+// Seguimiento del cursor/toque para repeler luciérnagas y arrastrar deberes
+const pointer = { x: -9999, y: -9999, active: false };
+let draggedObj = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+let lastPointerX = 0;
+let lastPointerY = 0;
+let throwVx = 0;
+let throwVy = 0;
+
+window.addEventListener("pointermove", (e) => {
+  pointer.x = e.clientX;
+  pointer.y = e.clientY;
+  pointer.active = true;
+
+  if (draggedObj) {
+    const dx = e.clientX - lastPointerX;
+    const dy = e.clientY - lastPointerY;
+    // Suaviza la velocidad de lanzamiento según el movimiento del cursor
+    throwVx = throwVx * 0.4 + dx * 0.45;
+    throwVy = throwVy * 0.4 + dy * 0.45;
+    lastPointerX = e.clientX;
+    lastPointerY = e.clientY;
+
+    const r = draggedObj.el.getBoundingClientRect();
+    draggedObj.x = Math.max(4, Math.min(innerWidth - r.width - 4, e.clientX - dragOffsetX));
+    draggedObj.y = Math.max(4, Math.min(innerHeight - r.height - 4, e.clientY - dragOffsetY));
+  }
+});
+
+window.addEventListener("pointerleave", () => {
+  pointer.active = false;
+});
+
+function releaseDragged() {
+  if (!draggedObj) return;
+  draggedObj.el.classList.remove("arrastrando");
+  // Limita la velocidad máxima de lanzamiento para que mantenga un rebote agradable
+  const maxSpeed = 14;
+  if (Math.hypot(throwVx, throwVy) > 0.4) {
+    draggedObj.vx = Math.max(-maxSpeed, Math.min(maxSpeed, throwVx));
+    draggedObj.vy = Math.max(-maxSpeed, Math.min(maxSpeed, throwVy));
+  }
+  draggedObj.dragging = false;
+  draggedObj = null;
+}
+
+window.addEventListener("pointerup", releaseDragged);
+window.addEventListener("pointercancel", releaseDragged);
+
+const fireflies = [];
+for (let i = 0; i < 55; i++) {
+  const el = document.createElement("div");
+  el.className = i % 3 === 0 ? "firefly morada" : "firefly";
+  document.body.appendChild(el);
+  const baseVx = (Math.random() - 0.5) * 0.55;
+  const baseVy = (Math.random() - 0.5) * 0.55;
+  fireflies.push({
+    el,
+    x: Math.random() * innerWidth,
+    y: Math.random() * innerHeight,
+    vx: baseVx,
+    vy: baseVy,
+    baseSpeed: Math.hypot(baseVx, baseVy) || 0.4,
+    phase: Math.random() * Math.PI * 2,
+    speed: 0.015 + Math.random() * 0.025
+  });
+}
+
+function animateFireflies() {
+  fireflies.forEach(f => {
+    // Repulsión suave al acercar el cursor o dedo
+    if (pointer.active) {
+      const dx = f.x - pointer.x;
+      const dy = f.y - pointer.y;
+      const dist = Math.hypot(dx, dy);
+      const repelRadius = 115;
+      if (dist < repelRadius && dist > 0.1) {
+        const force = (1 - dist / repelRadius) * 0.85;
+        f.vx += (dx / dist) * force;
+        f.vy += (dy / dist) * force;
+      }
+    }
+
+    // Fricción suave para que recuperen su velocidad natural tras ser dispersadas
+    const currentSpeed = Math.hypot(f.vx, f.vy);
+    if (currentSpeed > f.baseSpeed) {
+      f.vx *= 0.96;
+      f.vy *= 0.96;
+    }
+
+    f.x += f.vx;
+    f.y += f.vy;
+    f.phase += f.speed;
+    if (f.x < 0 || f.x > innerWidth) f.vx *= -1;
+    if (f.y < 0 || f.y > innerHeight) f.vy *= -1;
+    const g = 0.35 + (Math.sin(f.phase) + 1) * 0.32;
+    f.el.style.left = f.x + "px";
+    f.el.style.top = f.y + "px";
+    f.el.style.opacity = g;
+    f.el.style.transform = `scale(${0.65 + g * 0.7})`;
+  });
+  requestAnimationFrame(animateFireflies);
+}
+
+// Burbujas interactivas en tonos naranja y lila que explotan con el cursor y se regeneran
+const burbujas = [];
+const totalBurbujas = 22;
+
+function resetBurbuja(b, randomY = false) {
+  b.size = 18 + Math.random() * 26;
+  b.x = Math.random() * Math.max(20, innerWidth - b.size);
+  b.y = randomY ? Math.random() * innerHeight : innerHeight + b.size + Math.random() * 140;
+  b.vy = -(0.45 + Math.random() * 0.75);
+  b.vx = (Math.random() - 0.5) * 0.35;
+  b.wobble = Math.random() * Math.PI * 2;
+  b.wobbleSpeed = 0.02 + Math.random() * 0.02;
+  b.morada = Math.random() < 0.45;
+  b.el.className = b.morada ? "burbuja morada" : "burbuja";
+  b.el.style.width = b.size + "px";
+  b.el.style.height = b.size + "px";
+}
+
+function crearEfectoPop(x, y, size, morada) {
+  const ring = document.createElement("div");
+  ring.className = morada ? "burbuja-pop morada" : "burbuja-pop";
+  ring.style.width = size + "px";
+  ring.style.height = size + "px";
+  ring.style.left = (x - size / 2) + "px";
+  ring.style.top = (y - size / 2) + "px";
+  document.body.appendChild(ring);
+  setTimeout(() => ring.remove(), 430);
+}
+
+for (let i = 0; i < totalBurbujas; i++) {
+  const el = document.createElement("div");
+  document.body.appendChild(el);
+  const b = { el };
+  resetBurbuja(b, true);
+  burbujas.push(b);
+}
+
+function animateBurbujas() {
+  burbujas.forEach(b => {
+    b.wobble += b.wobbleSpeed;
+    b.x += b.vx + Math.sin(b.wobble) * 0.45;
+    b.y += b.vy;
+
+    const r = b.size / 2;
+    const bx = b.x + r;
+    const by = b.y + r;
+
+    // Detecta contacto con el cursor o dedo para hacer "pop" y reaparecer
+    if (pointer.active && Math.hypot(pointer.x - bx, pointer.y - by) <= r + 10) {
+      crearEfectoPop(bx, by, b.size, b.morada);
+      resetBurbuja(b, false);
+      return;
+    }
+
+    // Si sale por la parte superior, vuelve a aparecer abajo
+    if (b.y + b.size < -10) {
+      resetBurbuja(b, false);
+    }
+
+    b.el.style.transform = `translate(${b.x}px, ${b.y}px)`;
+  });
+  requestAnimationFrame(animateBurbujas);
+}
+
+// Deberes flotantes de corresponsabilidad con iconos y tonos alternados
+const deberes = [
+  { texto: "Cocinar y preparar alimentos", icono: "🍲", clase: "deber-morado" },
+  { texto: "Lavar los trastes", icono: "🍽️", clase: "deber-naranja" },
+  { texto: "Limpiar los espacios comunes", icono: "🧹", clase: "deber-lila" },
+  { texto: "Lavar y tender la ropa", icono: "🧺", clase: "deber-naranja-vibrante" },
+  { texto: "Ordenar los juguetes", icono: "🧸", clase: "deber-morado-oscuro" },
+  { texto: "Mantener organizadas las áreas compartidas", icono: "📦", clase: "deber-lila" },
+  { texto: "Trato Digno", icono: "🎗️", clase: "deber-naranja" },
+  { texto: "Respeto", icono: "🎗️", clase: "deber-morado" },
+  { texto: "Igualdad", icono: "🎗️", clase: "deber-naranja-vibrante" },
+  { texto: "Seguridad", icono: "🎗️", clase: "deber-lila" },
+  { texto: "Corresponsabilidad", icono: "🎗️", clase: "deber-morado-oscuro" }
+];
+
+const nombresBox = document.getElementById("nombres");
+const objetos = [];
+
+deberes.forEach((deber, i) => {
+  const el = document.createElement("div");
+  el.className = `nombre ${deber.clase}`;
+
+  const badge = document.createElement("span");
+  badge.className = "icono-deber";
+  badge.textContent = deber.icono;
+
+  const label = document.createElement("span");
+  label.textContent = deber.texto;
+
+  el.appendChild(badge);
+  el.appendChild(label);
+  nombresBox.appendChild(el);
+
+  const r = el.getBoundingClientRect();
+  const maxW = Math.max(10, innerWidth - r.width - 10);
+  const maxH = Math.max(10, innerHeight - r.height - 20);
+  const initVx = (i % 2 ? -1 : 1) * (0.55 + Math.random() * 0.45);
+  const initVy = (i % 3 === 0 ? 1 : -1) * (0.45 + Math.random() * 0.45);
+
+  const obj = {
+    el,
+    x: 5 + Math.random() * maxW,
+    y: 10 + Math.random() * maxH,
+    vx: initVx,
+    vy: initVy,
+    cruiseSpeed: Math.hypot(initVx, initVy),
+    dragging: false,
+    angle: Math.random() * 6.28
+  };
+
+  // Permite sujetar con clic o toque para arrastrar y lanzar
+  el.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    draggedObj = obj;
+    obj.dragging = true;
+    el.classList.add("arrastrando");
+    dragOffsetX = e.clientX - obj.x;
+    dragOffsetY = e.clientY - obj.y;
+    lastPointerX = e.clientX;
+    lastPointerY = e.clientY;
+    throwVx = 0;
+    throwVy = 0;
+  });
+
+  objetos.push(obj);
+});
+
+function animateNombres() {
+  // Detección y respuesta de colisiones elásticas entre los deberes flotantes
+  for (let i = 0; i < objetos.length; i++) {
+    const a = objetos[i];
+    const ra = a.el.getBoundingClientRect();
+    const acx = a.x + ra.width / 2;
+    const acy = a.y + ra.height / 2;
+
+    for (let j = i + 1; j < objetos.length; j++) {
+      const b = objetos[j];
+      const rb = b.el.getBoundingClientRect();
+      const bcx = b.x + rb.width / 2;
+      const bcy = b.y + rb.height / 2;
+
+      const dx = bcx - acx;
+      const dy = bcy - acy;
+      const overlapX = (ra.width + rb.width) / 2 - Math.abs(dx);
+      const overlapY = (ra.height + rb.height) / 2 - Math.abs(dy);
+
+      if (overlapX > 0 && overlapY > 0) {
+        // Eje de menor penetración para separar las píldoras sin que se encimen
+        let nx = 0;
+        let ny = 0;
+        let pen = 0;
+        if (overlapX < overlapY) {
+          nx = dx >= 0 ? 1 : -1;
+          pen = overlapX;
+        } else {
+          ny = dy >= 0 ? 1 : -1;
+          pen = overlapY;
+        }
+
+        if (!a.dragging && !b.dragging) {
+          a.x -= nx * pen * 0.5;
+          a.y -= ny * pen * 0.5;
+          b.x += nx * pen * 0.5;
+          b.y += ny * pen * 0.5;
+        } else if (a.dragging && !b.dragging) {
+          b.x += nx * pen;
+          b.y += ny * pen;
+        } else if (!a.dragging && b.dragging) {
+          a.x -= nx * pen;
+          a.y -= ny * pen;
+        }
+
+        // Velocidades efectivas (incluye la velocidad de arrastre si se golpea con la mano)
+        const avx = a.dragging ? throwVx : a.vx;
+        const avy = a.dragging ? throwVy : a.vy;
+        const bvx = b.dragging ? throwVx : b.vx;
+        const bvy = b.dragging ? throwVy : b.vy;
+
+        const rvx = bvx - avx;
+        const rvy = bvy - avy;
+        const velAlongNormal = rvx * nx + rvy * ny;
+
+        if (velAlongNormal < 0) {
+          const restitution = 0.88;
+          const impulse = -(1 + restitution) * velAlongNormal;
+
+          if (!a.dragging && !b.dragging) {
+            a.vx -= impulse * 0.5 * nx;
+            a.vy -= impulse * 0.5 * ny;
+            b.vx += impulse * 0.5 * nx;
+            b.vy += impulse * 0.5 * ny;
+          } else if (a.dragging && !b.dragging) {
+            b.vx += impulse * nx;
+            b.vy += impulse * ny;
+          } else if (!a.dragging && b.dragging) {
+            a.vx -= impulse * nx;
+            a.vy -= impulse * ny;
+          }
+        }
+      }
+    }
+  }
+
+  objetos.forEach(o => {
+    const r = o.el.getBoundingClientRect();
+
+    if (!o.dragging) {
+      // Repulsión ligera si el cursor pasa muy cerca sin sujetar
+      if (pointer.active && !draggedObj) {
+        const cxObj = o.x + r.width / 2;
+        const cyObj = o.y + r.height / 2;
+        const dx = cxObj - pointer.x;
+        const dy = cyObj - pointer.y;
+        const dist = Math.hypot(dx, dy);
+        const hoverRadius = Math.max(r.width * 0.65, 95);
+        if (dist < hoverRadius && dist > 1) {
+          const push = (1 - dist / hoverRadius) * 0.35;
+          o.vx += (dx / dist) * push;
+          o.vy += (dy / dist) * push;
+        }
+      }
+
+      // Desaceleración gradual tras un lanzamiento hasta volver a su velocidad de flotación
+      const speed = Math.hypot(o.vx, o.vy);
+      if (speed > o.cruiseSpeed) {
+        o.vx *= 0.985;
+        o.vy *= 0.985;
+      }
+
+      o.x += o.vx;
+      o.y += o.vy;
+
+      if (o.x <= 4) { o.x = 4; o.vx = Math.abs(o.vx); }
+      if (o.x + r.width >= innerWidth - 4) { o.x = Math.max(4, innerWidth - r.width - 4); o.vx = -Math.abs(o.vx); }
+      if (o.y <= 4) { o.y = 4; o.vy = Math.abs(o.vy); }
+      if (o.y + r.height >= innerHeight - 4) { o.y = Math.max(4, innerHeight - r.height - 4); o.vy = -Math.abs(o.vy); }
+    }
+
+    o.angle += 0.03;
+    const rot = o.dragging ? 0 : Math.sin(o.angle) * 1.5;
+    const scale = o.dragging ? 1.07 : 1;
+    o.el.style.transform = `translate(${o.x}px, ${o.y}px) rotate(${rot}deg) scale(${scale})`;
+  });
+  requestAnimationFrame(animateNombres);
+}
+
+animateFireflies();
+animateBurbujas();
+animateNombres();
+
+reiniciar.addEventListener("click", () => {
+  animationStart = 0;
+  finished = false;
+  mensaje.classList.remove("visible");
+});
+
+window.addEventListener("resize", resize);
+
+resize();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
